@@ -1,0 +1,31 @@
+name: Fetch Kuromoji Dictionary
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Dictionary Files
+        run: |
+          mkdir -p dict
+          curl -L https://github.com/takuyaa/kuromoji.js/raw/master/dict/base.dat.gz -o dict/base.dat.gz
+          curl -L https://github.com/takuyaa/kuromoji.js/raw/master/dict/check.dat.gz -o dict/check.dat.gz
+          curl -L https://github.com/takuyaa/kuromoji.js/raw/master/dict/tid_map.dat.gz -o dict/tid_map.dat.gz
+          curl -L https://github.com/takuyaa/kuromoji.js/raw/master/dict/tid.dat.gz -o dict/tid.dat.gz
+          curl -L https://github.com/takuyaa/kuromoji.js/raw/master/dict/unk_map.dat.gz -o dict/unk_map.dat.gz
+          curl -L https://github.com/takuyaa/kuromoji.js/raw/master/dict/unk_pos.dat.gz -o dict/unk_pos.dat.gz
+          curl -L https://github.com/takuyaa/kuromoji.js/raw/master/dict/unk.dat.gz -o dict/unk.dat.gz
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "actions@github.com"
+          git add dict/
+          git commit -m "Automated fetch of Kuromoji dictionary files" || exit 0
+          git push
