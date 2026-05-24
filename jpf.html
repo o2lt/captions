@@ -21,7 +21,7 @@
         <span class="interim" id="interim-text" style="color: #777777; font-style: italic;"></span>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
     <script>
         const captionBox = document.getElementById('caption-box');
         const finalTextObj = document.getElementById('final-text');
@@ -31,12 +31,16 @@
         let tokenizer = null;
         const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
 
+        // Secure jsDelivr path handles the dictionary files smoothly over GitHub Pages HTTPS
         kuromoji.builder({ dicPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/" }).build((err, _tokenizer) => {
             if (err) {
                 engineStatus.innerText = "Dictionary Error";
                 engineStatus.style.color = "#ff3b30";
+                console.error("Kuromoji failed to initialize:", err);
                 return;
             }
+            
+            // Map the loaded dictionary tokenizer to our global variable
             tokenizer = _tokenizer;
             engineStatus.innerText = "Parser Connected";
             engineStatus.style.color = "#34c759";
@@ -59,6 +63,7 @@
                 let surface = token.surface_form;
                 let reading = token.reading;
 
+                // Canvas-friendly styling rule implementation
                 if (surface === "は" || surface === "が" || surface === "を" || surface === "に" || surface === "で") {
                     processedHtml += `<span style="color: #c71f23;"><strong>${surface}</strong></span>`;
                     return;
