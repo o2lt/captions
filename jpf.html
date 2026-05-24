@@ -32,7 +32,8 @@
         const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
 
         // Secure jsDelivr path handles the dictionary files smoothly over GitHub Pages HTTPS
-        kuromoji.builder({ dicPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/" }).build((err, _tokenizer) => {
+       // Point directly to the folder hosted right inside your GitHub repository
+        kuromoji.builder({ dicPath: "dict/" }).build((err, _tokenizer) => {
             if (err) {
                 engineStatus.innerText = "Dictionary Error";
                 engineStatus.style.color = "#ff3b30";
