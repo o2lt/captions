@@ -21,7 +21,7 @@
         <span class="interim" id="interim-text" style="color: #777777; font-style: italic;"></span>
     </div>
 
-    <!-- Using the standard official stable production build of Kuromoji -->
+   <!-- Using the standard official stable production build of Kuromoji -->
     <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
     <script>
         const captionBox = document.getElementById('caption-box');
@@ -36,7 +36,7 @@
         
         const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
 
-        // Points directly to the relative directory containing your 12 uploaded .dat.gz files
+        // Uses the official standard builder function pointing directly to your uploaded folder
         kuromoji.builder({ dicPath: "kuromoji-dict/" }).build((err, _tokenizer) => {
             if (err) {
                 engineStatus.innerText = "Initialization Failed";
@@ -137,7 +137,7 @@
             return true;
         }
 
-        // Clean user-tap listener to prevent cross-origin collision issues and handle mic toggling safely
+        // Clean user-tap listener to handle mic toggling safely
         document.body.addEventListener('click', async (e) => {
             if (e.target.tagName === 'A' || !tokenizer) return;
 
