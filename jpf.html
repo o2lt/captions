@@ -21,10 +21,10 @@
         <span class="interim" id="interim-text" style="color: #777777; font-style: italic;"></span>
     </div>
 
-   <!-- Using the standard official stable production build of Kuromoji -->
-    <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
+    <!-- Utilizing modern ES module structure to bypass heavy local dictionary hosting entirely -->
     <script type="module">
         import { kuromoji } from "https://code4fukui.github.io/kuromoji-es/kuromoji.js";
+
         const captionBox = document.getElementById('caption-box');
         const finalTextObj = document.getElementById('final-text');
         const interimTextObj = document.getElementById('interim-text');
@@ -37,6 +37,7 @@
         
         const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
 
+        // Clean modern async initialization hook
         async function initTokenizer() {
             try {
                 tokenizer = await kuromoji.createTokenizer();
@@ -65,7 +66,7 @@
                 let surface = token.surface_form;
                 let reading = token.reading;
 
-                // Particle highlighting matching your custom color requirements for Canvas deployment
+                // Precision particle highlighting matching style guidelines
                 if (surface === "は" || surface === "が" || surface === "を" || surface === "に" || surface === "で") {
                     processedHtml += `<span style="color: #c71f23;"><strong>${surface}</strong></span>`;
                     return;
@@ -89,8 +90,9 @@
             }
 
             recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = true;
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 3;
             recognition.lang = "ja-JP"; 
 
             recognition.onstart = () => {
@@ -136,7 +138,7 @@
             return true;
         }
 
-        // Clean user-tap listener to handle mic toggling safely
+        // Click wrapper ensuring native validation for microphone usage metrics
         document.body.addEventListener('click', async (e) => {
             if (e.target.tagName === 'A' || !tokenizer) return;
 
@@ -170,6 +172,9 @@
                 }
             }
         });
+
+        // Run dictionary loader engine instantly on page mount
+        initTokenizer();
     </script>
 </body>
 </html>
