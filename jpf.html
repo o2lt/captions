@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日本語 Live Furigana Deck</title>
+</head>
+<body style="margin: 0; padding: 30px; background-color: #000000; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; box-sizing: border-box;">
+
+    <div id="control-panel" style="align-self: flex-start; z-index: 10; background: rgba(20, 20, 20, 0.9); padding: 12px 18px; border-radius: 8px; border: 1px solid #333333;">
+        <a href="index.html" style="color: #ff9500; text-decoration: none; font-size: 14px; font-weight: bold; margin-right: 20px;">← Portal</a>
+        <span style="font-size: 13px; color: #aaaaaa; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-right: 15px;">Track Mode: 日本語 + 振仮名</span>
+        <span id="engine-status" style="font-size: 13px; color: #ff9500; font-weight: bold;">Loading parsing dictionary...</span>
+    </div>
+
+    <div id="caption-box" style="font-size: 18pt; font-weight: 700; line-height: 2.8; max-height: 75vh; overflow-y: auto; word-wrap: break-word; margin-top: 20px; ruby-position: over; scroll-behavior: smooth;">
+        <span class="final" id="final-text" style="color: #ffffff;">辞書データの読み込み完了をお待ちください...</span>
+        <span class="interim" id="interim-text" style="color: #777777; font-style: italic;"></span>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
+    <script>
+        const captionBox = document.getElementById('caption-box');
+        const finalTextObj = document.getElementById('final-text');
+        const interimTextObj = document.getElementById('interim-text');
+        const engineStatus = document.getElementById('engine-status');
+
+        let tokenizer = null;
+        const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+
+        kuromoji.builder({ dicPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/" }).build((err, _tokenizer) => {
+            if (err) {
+                engineStatus.innerText = "Dictionary Error";
+                engineStatus.style.color = "#ff3b30";
+                return;
+            }
+            tokenizer = _tokenizer;
+            engineStatus.innerText = "Parser Connected";
+            engineStatus.style.color = "#34c759";
+            finalTextObj.innerText = "画面をタップすると振仮名付き音声認識を開始します...";
+            initializeSpeechEngine();
+        });
+
+        function toHiragana(katakana) {
+            return katakana.replace(/[\u30a1-\u30f6]/g, match => {
+                return String.fromCharCode(match.charCodeAt(0) - 0x60);
+            });
+        }
+
+        function injectFuriganaAndHighlights(rawText) {
+            if (!tokenizer) return rawText;
+            const tokens = tokenizer.tokenize(rawText);
+            let processedHtml = "";
+
+            tokens.forEach(token => {
+                let surface = token.surface_form;
+                let reading = token.reading;
+
+                if (surface === "は" || surface === "が" || surface === "を" || surface === "に" || surface === "で") {
+                    processedHtml += `<span style="color: #c71f23;"><strong>${surface}</strong></span>`;
+                    return;
+                }
+
+                if (reading && reading !== "*" && /[一-龠々]/.test(surface)) {
+                    let hiraganaReading = toHiragana(reading);
+                    processedHtml += `<ruby style="font-size: 18pt;">${surface}<rt style="font-size: 14pt; color: #aaa; font-weight: normal; letter-spacing: 0px;">${hiraganaReading}</rt></ruby>`;
+                } else {
+                    processedHtml += surface;
+                }
+            });
+            return processedHtml;
+        }
+
+        function initializeSpeechEngine() {
+            if (!SpeechRecognition) return;
+            let recognition = new SpeechRecognition();
+            let isRunning = false;
+
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = "ja-JP"; 
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                if (finalTranscript) { finalTextObj.innerHTML += injectFuriganaAndHighlights(finalTranscript) + ' '; }
+                interimTextObj.innerHTML = injectFuriganaAndHighlights(interimTranscript);
+                captionBox.scrollTop = captionBox.scrollHeight;
+            };
+
+            recognition.onend = () => { if (isRunning) { try { recognition.start(); } catch (e) {} } };
+
+            document.body.addEventListener('click', (e) => {
+                if (e.target.tagName === 'A' || !tokenizer) return;
+                if (!isRunning) {
+                    finalTextObj.innerHTML = "";
+                    interimTextObj.innerHTML = "";
+                    isRunning = true;
+                    try { recognition.start(); } catch (e) {}
+                }
+            });
+        }
+    </script>
+</body>
+</html>

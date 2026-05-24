@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Multi-Accent Deck</title>
+</head>
+<body style="margin: 0; padding: 30px; background-color: #000000; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; box-sizing: border-box;">
+
+    <div id="control-panel" style="align-self: flex-start; z-index: 10; background: rgba(20, 20, 20, 0.9); padding: 12px 18px; border-radius: 8px; border: 1px solid #333333;">
+        <a href="index.html" style="color: #007aff; text-decoration: none; font-size: 14px; font-weight: bold; margin-right: 20px;">← Portal</a>
+        <label for="accent-select" style="font-size: 13px; color: #aaaaaa; margin-right: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Accent Filter:</label>
+        <select id="accent-select" style="background-color: #222222; color: #ffffff; border: 1px solid #555555; padding: 8px 14px; font-size: 16px; border-radius: 4px; outline: none; cursor: pointer;">
+            <option value="en-IN">English - South Asian Accent (India)</option>
+            <option value="en-JP">English - Japanese Accent (Japan)</option>
+            <option value="en-CN">English - Chinese Accent (China)</option>
+            <option value="en-GB">English - British Accent (UK)</option>
+            <option value="en-AU">English - Australian Accent</option>
+            <option value="en-US">English - Standard US Baseline</option>
+        </select>
+    </div>
+
+    <div id="caption-box" style="font-size: 8vh; font-weight: 700; line-height: 1.5; max-height: 72vh; overflow-y: auto; word-wrap: break-word; margin-top: 20px; scroll-behavior: smooth;">
+        <span class="final" id="final-text" style="color: #ffffff;">Tap on the dark space to initialize English tracking...</span>
+        <span class="interim" id="interim-text" style="color: #777777; font-style: italic;"></span>
+    </div>
+
+    <script>
+        const captionBox = document.getElementById('caption-box');
+        const finalTextObj = document.getElementById('final-text');
+        const interimTextObj = document.getElementById('interim-text');
+        const accentSelect = document.getElementById('accent-select');
+
+        const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            finalTextObj.innerText = "Error: Browser speech API unavailable.";
+        } else {
+            let recognition = new SpeechRecognition();
+            let isRunning = false;
+
+            function configureRecognition() {
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.lang = accentSelect.value; 
+
+                recognition.onresult = (event) => {
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            finalTranscript += event.results[i][0].transcript + ' ';
+                        } else {
+                            interimTranscript += event.results[i][0].transcript;
+                        }
+                    }
+
+                    if (finalTranscript) { finalTextObj.innerText += finalTranscript; }
+                    interimTextObj.innerText = interimTranscript;
+                    captionBox.scrollTop = captionBox.scrollHeight;
+                };
+
+                recognition.onend = () => { if (isRunning) { try { recognition.start(); } catch (e) {} } };
+            }
+
+            configureRecognition();
+
+            accentSelect.addEventListener('change', () => {
+                if (isRunning) {
+                    recognition.stop();
+                    setTimeout(() => { configureRecognition(); recognition.start(); }, 400);
+                } else { configureRecognition(); }
+            });
+
+            document.body.addEventListener('click', (e) => {
+                if (e.target.id === 'accent-select' || e.target.tagName === 'A') return;
+                if (!isRunning) {
+                    finalTextObj.innerText = "";
+                    interimTextObj.innerText = "";
+                    isRunning = true;
+                    try { recognition.start(); } catch (e) {}
+                }
+            });
+        }
+    </script>
+</body>
+</html>

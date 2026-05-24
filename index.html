@@ -3,190 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Accent Caption Tool</title>
-    <style>
-        /* High-contrast dark layout optimized for landscape view */
-        body {
-            margin: 0;
-            padding: 30px;
-            background-color: #000000; /* Pure black background */
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between; /* Push controls top, text bottom */
-            height: 100vh;
-            box-sizing: border-box;
-        }
-
-        /* Clean, minimal container for our accent picker */
-        #control-panel {
-            align-self: flex-start;
-            z-index: 10;
-            background: rgba(20, 20, 20, 0.9);
-            padding: 12px 18px;
-            border-radius: 8px;
-            border: 1px solid #333333;
-        }
-
-        label {
-            font-size: 13px;
-            color: #aaaaaa;
-            margin-right: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
-        }
-
-        /* Subtle dark dropdown menu styling */
-        select {
-            background-color: #222222;
-            color: #ffffff;
-            border: 1px solid #555555;
-            padding: 8px 14px;
-            font-size: 16px;
-            border-radius: 4px;
-            outline: none;
-            cursor: pointer;
-        }
-
-        select:focus {
-            border-color: #007aff;
-        }
-
-        #caption-box {
-            font-size: 4vh; /* Massive font size tracking landscape height */
-            font-weight: 300; /* Thick bold lettering for easy reading */
-            line-height: 1.5;
-            max-height: 72vh; /* Leaves comfortable room for header dropdown */
-            overflow-y: auto;
-            word-wrap: break-word;
-            margin-top: 20px;
-        }
-
-        /* High-visibility gray for real-time acoustic processing guesses */
-        .interim {
-            color: #777777;
-            font-style: italic;
-        }
-
-        /* High-visibility pure white for locked-in phrases */
-        .final {
-            color: #ffffff;
-        }
-    </style>
+    <title>Classroom Caption Portal</title>
 </head>
-<body>
+<body style="margin:0; padding:40px; background-color:#000000; color:#ffffff; font-family:-apple-system, BlinkMacSystemFont, sans-serif; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:100vh; box-sizing:border-box;">
 
-    <!-- Dynamic Accent Picker Header -->
-    <div id="control-panel">
-        <label for="accent-select">Optimize For Accent:</label>
-        <select id="accent-select">
-            <!-- Target Accents -->
-            <option value="en-US">Standard US English</option>
-		<option value="en-IN">South Asian Accent (India)</option>
-            <option value="en-JP">Japanese Accent (Japan)</option>
-            <option value="en-CN">Chinese Accent (China)</option>
-            <option value="en-GB">British Accent (United Kingdom)</option>
-            <option value="en-AU">Australian Accent (Australia)</option>
-            <option value="en-CA">Canadian Accent (Canada)</option>
-            <option value="en-NG">West African Accent (Nigeria)</option>
-            <option value="en-NZ">New Zealand Accent (NZ)</option>
-            
-        </select>
-    </div>
+    <h1 style="font-size: 28pt; margin-bottom: 10px; font-weight: 700; letter-spacing: -0.5px;">Speech-to-Text Classroom Deck</h1>
+    <p style="font-size: 16pt; color: #888888; margin-bottom: 40px; text-align: center;">Select a specialized caption engine version below to initialize your session.</p>
 
-    <!-- Live Text Area -->
-    <div id="caption-box">
-        <span class="final" id="final-text">Tap anywhere on the black area to start...</span>
-        <span class="interim" id="interim-text"></span>
-    </div>
-
-    <script>
-        const captionBox = document.getElementById('caption-box');
-        const finalTextObj = document.getElementById('final-text');
-        const interimTextObj = document.getElementById('interim-text');
-        const accentSelect = document.getElementById('accent-select');
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 900px; width: 100%;">
         
-        if (!SpeechRecognition) {
-            finalTextObj.innerText = "Error: Your browser does not support Web Speech API. Please try Safari on iOS or Chrome on Android.";
-        } else {
-            let recognition = new SpeechRecognition();
-            let isRunning = false;
+        <!-- VER 1: ENGLISH ONLY -->
+        <a href="eng.html" style="text-decoration: none; color: inherit; background: #111111; border: 1px solid #333333; padding: 25px; border-radius: 12px; transition: transform 0.2s, border-color 0.2s; cursor: pointer;">
+            <div style="font-size: 14pt; color: #007aff; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Version 1</div>
+            <div style="font-size: 20pt; font-weight: 700; margin-bottom: 10px;">English Accents</div>
+            <div style="font-size: 14pt; color: #aaaaaa; line-height: 1.4;">Optimized for Global English dialects (South Asian, Japanese, Chinese, British, and US speech vectors).</div>
+        </a>
 
-            function configureRecognition() {
-                recognition.continuous = true;
-                recognition.interimResults = true;
-                
-                // Read whichever language profile is currently picked in your dropdown
-                recognition.lang = accentSelect.value; 
+        <!-- VER 2: JAPANESE PLAIN -->
+        <a href="jpp.html" style="text-decoration: none; color: inherit; background: #111111; border: 1px solid #333333; padding: 25px; border-radius: 12px; transition: transform 0.2s, border-color 0.2s; cursor: pointer;">
+            <div style="font-size: 14pt; color: #34c759; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Version 2</div>
+            <div style="font-size: 20pt; font-weight: 700; margin-bottom: 10px;">日本語 Plain</div>
+            <div style="font-size: 14pt; color: #aaaaaa; line-height: 1.4;">Standard Kanji/Kana script output with automatic structural red particle highlighters. Lightweight layout.</div>
+        </a>
 
-                recognition.onresult = (event) => {
-                    let interimTranscript = '';
-                    let finalTranscript = '';
+        <!-- VER 3: JAPANESE FURIGANA -->
+        <a href="jpf.html" style="text-decoration: none; color: inherit; background: #111111; border: 1px solid #333333; padding: 25px; border-radius: 12px; transition: transform 0.2s, border-color 0.2s; cursor: pointer;">
+            <div style="font-size: 14pt; color: #ff9500; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Version 3</div>
+            <div style="font-size: 20pt; font-weight: 700; margin-bottom: 10px;">日本語 + Furigana</div>
+            <div style="font-size: 14pt; color: #aaaaaa; line-height: 1.4;">Deep linguistic tracking. Generates automatic phonetic readings above Kanji symbols alongside active syntax highlights.</div>
+        </a>
 
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        if (event.results[i].isFinal) {
-                            finalTranscript += event.results[i][0].transcript + ' ';
-                        } else {
-                            interimTranscript += event.results[i][0].transcript;
-                        }
-                    }
+    </div>
 
-                    if (finalTranscript) {
-                        finalTextObj.innerText += finalTranscript;
-                    }
-                    interimTextObj.innerText = interimTranscript;
+    <!-- Quick Return Breadcrumb Note -->
+    <div style="margin-top: 50px; font-size: 12pt; color: #555555;">Refresh or bookmark individual versions to launch directly mid-lecture.</div>
 
-                    // Automatically tracks scrolling downwards as lines accumulate
-                    window.scrollTo(0, document.body.scrollHeight);
-                };
-
-                recognition.onend = () => {
-                    // Loop-restarts the recording session seamlessly when pauses cause a timeout
-                    if (isRunning) {
-                        try {
-                            recognition.start();
-                        } catch (e) {}
-                    }
-                };
-            }
-
-            // Initial baseline application configuration
-            configureRecognition();
-
-            // Swapping dialects drops the current processing listener and stands up the new dictionary layout immediately
-            accentSelect.addEventListener('change', () => {
-                if (isRunning) {
-                    recognition.stop();
-                    setTimeout(() => {
-                        configureRecognition();
-                        recognition.start();
-                    }, 400);
-                } else {
-                    configureRecognition();
-                }
-            });
-
-            // Handle the manual viewport permission tap barrier
-            document.body.addEventListener('click', (e) => {
-                if (e.target.id === 'accent-select') return;
-
-                if (!isRunning) {
-                    finalTextObj.innerText = "";
-                    interimTextObj.innerText = "";
-                    isRunning = true;
-                    try {
-                        recognition.start();
-                    } catch (e) {
-                        console.log("Recognition active.");
-                    }
-                }
-            });
-        }
-    </script>
 </body>
 </html>
