@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>日本語 Plain Subtitles</title>
 </head>
-<body style="margin: 0; padding: 30px; background-color: #000000; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; box-sizing: border-box;">
+<body style="margin: 0; padding: 30px; background-color: #000000; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; overflow-y: auto; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; box-sizing: border-box;">
 
     <!-- Control Header -->
     <div id="control-panel" style="align-self: flex-start; z-index: 10; background: rgba(20, 20, 20, 0.9); padding: 12px 18px; border-radius: 8px; border: 1px solid #333333; display: flex; align-items: center; gap: 20px;">
@@ -13,7 +13,7 @@
         <span style="font-size: 13px; color: #aaaaaa; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Track Mode: 日本語 Plain Text Only</span>
     </div>
 
-    <div id="caption-box" style="font-size: 8vh; font-weight: 700; line-height: 1.6; max-height: 72vh; overflow-y: auto; word-wrap: break-word; margin-top: 20px; scroll-behavior: smooth;">
+    <div id="caption-box" style="font-size: clamp(28px, 6vh, 72px); font-weight: 700; line-height: 1.6; max-height: 72vh; overflow-y: auto; word-wrap: break-word; margin-top: 20px; scroll-behavior: smooth;">
         <span class="final" id="final-text" style="color: #ffffff;">画面をタップすると日本語音声認識を開始します...</span>
         <span class="interim" id="interim-text" style="color: #777777; font-style: italic;"></span>
     </div>
@@ -26,13 +26,13 @@
         const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
         
         function formatParticles(text) {
-            return text
-                .replace(/は/g, '<span style="color: #c71f23;"><strong>は</strong></span>')
-                .replace(/が/g, '<span style="color: #c71f23;"><strong>が</strong></span>')
-                .replace(/を/g, '<span style="color: #c71f23;"><strong>を</strong></span>')
-                .replace(/に/g, '<span style="color: #c71f23;"><strong>に</strong></span>')
-                .replace(/で/g, '<span style="color: #c71f23;"><strong>で</strong></span>');
-        }
+    return text
+        .replace(/(?<=\s|^)(は)(?=\s|$|[。、！？])/g, '<span style="color:#c71f23;"><strong>$1</strong></span>')
+        .replace(/(?<=\s|^)(が)(?=\s|$|[。、！？])/g, '<span style="color:#c71f23;"><strong>$1</strong></span>')
+        .replace(/(?<=\s|^)(を)(?=\s|$|[。、！？])/g, '<span style="color:#c71f23;"><strong>$1</strong></span>')
+        .replace(/(?<=\s|^)(に)(?=\s|$|[。、！？])/g, '<span style="color:#c71f23;"><strong>$1</strong></span>')
+        .replace(/(?<=\s|^)(で)(?=\s|$|[。、！？])/g, '<span style="color:#c71f23;"><strong>$1</strong></span>');
+}
 
         if (!SpeechRecognition) {
             finalTextObj.innerText = "Error: Browser Speech API missing.";
@@ -40,10 +40,14 @@
             let recognition = new SpeechRecognition();
             let isRunning = false;
 
-            recognition.continuous = true;
-            recognition.interimResults = true;
+            recognition.continuous = false;
+            recognition.interimResults = false;
             recognition.lang = "ja-JP"; 
+            recognition.maxAlternatives = 1;
 
+recognition.onerror = (event) => {
+    console.error("Speech recognition error:", event.error);
+};
             recognition.onresult = (event) => {
                 let interimTranscript = '';
                 let finalTranscript = '';
@@ -61,7 +65,17 @@
                 captionBox.scrollTop = captionBox.scrollHeight;
             };
 
-            recognition.onend = () => { if (isRunning) { try { recognition.start(); } catch (e) {} } };
+            recognition.onend = () => {
+    if (isRunning) {
+        setTimeout(() => {
+            try {
+                recognition.start();
+            } catch (e) {
+                console.error(e);
+            }
+        }, 300);
+    }
+};
 
             document.body.addEventListener('click', (e) => {
                 if (e.target.tagName === 'A') return;
