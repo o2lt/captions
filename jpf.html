@@ -21,7 +21,8 @@
         <span class="interim" id="interim-text" style="color: #777777; font-style: italic;"></span>
     </div>
 
-   <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
+   <!-- Load the self-contained browser analyzer that has the dictionary pre-bundled -->
+    <script src="https://cdn.jsdelivr.net/npm/kuromoji-fix-dict@0.1.2/build/kuromoji.js"></script>
     <script>
         const captionBox = document.getElementById('caption-box');
         const finalTextObj = document.getElementById('final-text');
@@ -31,17 +32,16 @@
         let tokenizer = null;
         const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
 
-        // Secure jsDelivr path handles the dictionary files smoothly over GitHub Pages HTTPS
-       // Point directly to the folder hosted right inside your GitHub repository
-        kuromoji.builder({ dicPath: "dict/" }).build((err, _tokenizer) => {
+        // Since the dictionary is completely pre-bundled, we pass an empty string. 
+        // This instantly initializes without hanging or making external web requests!
+        kuromoji.builder({ dicPath: "" }).build((err, _tokenizer) => {
             if (err) {
-                engineStatus.innerText = "Dictionary Error";
+                engineStatus.innerText = "Initialization Failed";
                 engineStatus.style.color = "#ff3b30";
-                console.error("Kuromoji failed to initialize:", err);
+                console.error("Kuromoji initialization error:", err);
                 return;
             }
             
-            // Map the loaded dictionary tokenizer to our global variable
             tokenizer = _tokenizer;
             engineStatus.innerText = "Parser Connected";
             engineStatus.style.color = "#34c759";
@@ -64,7 +64,7 @@
                 let surface = token.surface_form;
                 let reading = token.reading;
 
-                // Canvas-friendly styling rule implementation
+                // Particle highlighting strategy matching Canvas requirements
                 if (surface === "は" || surface === "が" || surface === "を" || surface === "に" || surface === "で") {
                     processedHtml += `<span style="color: #c71f23;"><strong>${surface}</strong></span>`;
                     return;
@@ -72,7 +72,7 @@
 
                 if (reading && reading !== "*" && /[一-龠々]/.test(surface)) {
                     let hiraganaReading = toHiragana(reading);
-                    processedHtml += `<ruby style="font-size: 18pt;">${surface}<rt style="font-size: 14pt; color: #aaa; font-weight: normal; letter-spacing: 0px;">${hiraganaReading}</rt></ruby>`;
+                    processedHtml += `<ruby style="font-size: 18pt;">${surface}<rt style="font-size: 14pt; color: #888; font-weight: normal; letter-spacing: 0px;">${hiraganaReading}</rt></ruby>`;
                 } else {
                     processedHtml += surface;
                 }
@@ -81,7 +81,12 @@
         }
 
         function initializeSpeechEngine() {
-            if (!SpeechRecognition) return;
+            if (!SpeechRecognition) {
+                engineStatus.innerText = "Speech API Unsupported";
+                engineStatus.style.color = "#ff3b30";
+                return;
+            }
+            
             let recognition = new SpeechRecognition();
             let isRunning = false;
 
@@ -101,12 +106,18 @@
                     }
                 }
 
-                if (finalTranscript) { finalTextObj.innerHTML += injectFuriganaAndHighlights(finalTranscript) + ' '; }
+                if (finalTranscript) { 
+                    finalTextObj.innerHTML += injectFuriganaAndHighlights(finalTranscript) + ' '; 
+                }
                 interimTextObj.innerHTML = injectFuriganaAndHighlights(interimTranscript);
                 captionBox.scrollTop = captionBox.scrollHeight;
             };
 
-            recognition.onend = () => { if (isRunning) { try { recognition.start(); } catch (e) {} } };
+            recognition.onend = () => { 
+                if (isRunning) { 
+                    try { recognition.start(); } catch (e) {} 
+                } 
+            };
 
             document.body.addEventListener('click', (e) => {
                 if (e.target.tagName === 'A' || !tokenizer) return;
