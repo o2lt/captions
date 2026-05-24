@@ -24,7 +24,7 @@
     <!-- Using the standard official stable production build of Kuromoji -->
     <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
     <script>
-       const captionBox = document.getElementById('caption-box');
+        const captionBox = document.getElementById('caption-box');
         const finalTextObj = document.getElementById('final-text');
         const interimTextObj = document.getElementById('interim-text');
         const engineStatus = document.getElementById('engine-status');
@@ -36,38 +36,16 @@
         
         const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
 
-        // Custom reliable loader that bypasses Kuromoji's broken URL builder
-        const CDN_URL = "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/";
-        const dictFiles = ["base.dat.gz", "check.dat.gz", "tid.dat.gz", "tid_map.dat.gz", "unk.dat.gz", "unk_map.dat.gz", "unk_pos.dat.gz"];
-
-        // Overriding the internal dictionary loader completely
-        const loader = new kuromoji.DictionaryLoader(CDN_URL);
-        loader.loadArrayBuffer = async function (url, callback) {
-            // Force the URL to look exactly at the clean public CDN mirror
-            const fileName = url.split('/').pop();
-            const cleanUrl = CDN_URL + fileName;
-            
-            try {
-                const response = await fetch(cleanUrl);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const buffer = await response.arrayBuffer();
-                callback(null, buffer);
-            } catch (err) {
-                callback(err, null);
-            }
-        };
-
-        // Initialize using our custom overridden loader engine
-        engineStatus.innerText = "Downloading dictionary data...";
-        loader.load((err, dic) => {
+        // Points directly to the relative directory containing your 12 uploaded .dat.gz files
+        kuromoji.builder({ dicPath: "kuromoji-dict/" }).build((err, _tokenizer) => {
             if (err) {
                 engineStatus.innerText = "Initialization Failed";
                 engineStatus.style.color = "#ff3b30";
-                console.error("Custom Loader Error:", err);
+                console.error("Kuromoji initialization error:", err);
                 return;
             }
             
-            tokenizer = new kuromoji.Tokenizer(dic);
+            tokenizer = _tokenizer;
             engineStatus.innerText = "Parser Connected";
             engineStatus.style.color = "#34c759";
             finalTextObj.innerText = "画面をタップしてマイクを許可し、音声認識を開始してください...";
@@ -88,7 +66,7 @@
                 let surface = token.surface_form;
                 let reading = token.reading;
 
-                // Particle styling matching your design layout requirements
+                // Particle highlighting matching your custom color requirements for Canvas deployment
                 if (surface === "は" || surface === "が" || surface === "を" || surface === "に" || surface === "で") {
                     processedHtml += `<span style="color: #c71f23;"><strong>${surface}</strong></span>`;
                     return;
@@ -159,7 +137,7 @@
             return true;
         }
 
-        // Handle native user gesture requirement for mic permissions seamlessly
+        // Clean user-tap listener to prevent cross-origin collision issues and handle mic toggling safely
         document.body.addEventListener('click', async (e) => {
             if (e.target.tagName === 'A' || !tokenizer) return;
 
