@@ -13,12 +13,10 @@
         <div>
             <label for="accent-select" style="font-size: 13px; color: #aaaaaa; margin-right: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Accent Filter:</label>
             <select id="accent-select" style="background-color: #222222; color: #ffffff; border: 1px solid #555555; padding: 8px 14px; font-size: 16px; border-radius: 4px; outline: none; cursor: pointer;">
-                <option value="en-IN">English - South Asian Accent (India)</option>
-                <option value="en-JP">English - Japanese Accent (Japan)</option>
-                <option value="en-CN">English - Chinese Accent (China)</option>
-                <option value="en-GB">English - British Accent (UK)</option>
-                <option value="en-AU">English - Australian Accent</option>
-                <option value="en-US">English - Standard US Baseline</option>
+               <option value="en-US">English - US</option>
+                <option value="en-GB">English - British</option>
+                <option value="en-AU">English - Australian</option>
+                <option value="en-IN">English - India</option>
             </select>
         </div>
     </div>
@@ -43,8 +41,9 @@
             let isRunning = false;
 
             function configureRecognition() {
-                recognition.continuous = true;
-                recognition.interimResults = true;
+                recognition.maxAlternatives = 3;
+                recognition.continuous = false;
+                recognition.interimResults = false;
                 recognition.lang = accentSelect.value; 
 
                 recognition.onresult = (event) => {
@@ -59,12 +58,22 @@
                         }
                     }
 
-                    if (finalTranscript) { finalTextObj.innerText += finalTranscript; }
+                    if (finalTranscript) { finalTextObj.innerText += finalTranscript +; }
                     interimTextObj.innerText = interimTranscript;
                     captionBox.scrollTop = captionBox.scrollHeight;
                 };
 
-                recognition.onend = () => { if (isRunning) { try { recognition.start(); } catch (e) {} } };
+                recognition.onend = () => {
+    if (isRunning) {
+        setTimeout(() => {
+            try {
+                recognition.start();
+            } catch (e) {
+                console.error(e);
+            }
+        }, 250);
+    }
+};
             }
 
             configureRecognition();
