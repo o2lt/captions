@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>日本語 Live Furigana Deck</title>
 </head>
-<body style="margin: 0; padding: 30px; background-color: #000000; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; overflow-y: auto; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; box-sizing: border-box;">
+<body style="margin: 0; padding: 30px; background-color: #000000; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; height: 100vh; box-sizing: border-box;">
 
     <!-- Control Header -->
     <div id="control-panel" style="align-self: flex-start; z-index: 10; background: rgba(20, 20, 20, 0.9); padding: 12px 18px; border-radius: 8px; border: 1px solid #333333; display: flex; align-items: center; gap: 20px;">
@@ -90,9 +90,8 @@
             }
 
             recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 3;
+            recognition.continuous = true;
+            recognition.interimResults = true;
             recognition.lang = "ja-JP"; 
 
             recognition.onstart = () => {
