@@ -23,7 +23,8 @@
 
    <!-- Using the standard official stable production build of Kuromoji -->
     <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
-    <script>
+    <script type="module">
+        import { kuromoji } from "https://code4fukui.github.io/kuromoji-es/kuromoji.js";
         const captionBox = document.getElementById('caption-box');
         const finalTextObj = document.getElementById('final-text');
         const interimTextObj = document.getElementById('interim-text');
@@ -36,20 +37,18 @@
         
         const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
 
-        // Uses the official standard builder function pointing directly to your uploaded folder
-        kuromoji.builder({ dicPath: "./dict/" }).build((err, _tokenizer) => {
-            if (err) {
+        async function initTokenizer() {
+            try {
+                tokenizer = await kuromoji.createTokenizer();
+                engineStatus.innerText = "Parser Connected";
+                engineStatus.style.color = "#34c759";
+                finalTextObj.innerText = "画面をタップしてマイクを許可し、音声認識を開始してください...";
+            } catch (err) {
                 engineStatus.innerText = "Initialization Failed";
                 engineStatus.style.color = "#ff3b30";
-                console.error("Kuromoji initialization error:", err);
-                return;
+                console.error("Kuromoji-es failed to initialize:", err);
             }
-            
-            tokenizer = _tokenizer;
-            engineStatus.innerText = "Parser Connected";
-            engineStatus.style.color = "#34c759";
-            finalTextObj.innerText = "画面をタップしてマイクを許可し、音声認識を開始してください...";
-        });
+        }
 
         function toHiragana(katakana) {
             return katakana.replace(/[\u30a1-\u30f6]/g, match => {
