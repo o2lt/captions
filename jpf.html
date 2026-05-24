@@ -21,8 +21,8 @@
         <span class="interim" id="interim-text" style="color: #777777; font-style: italic;"></span>
     </div>
 
-    <!-- Load the self-contained browser analyzer that has the dictionary pre-bundled -->
-    <script src="https://cdn.jsdelivr.net/npm/kuromoji-fix-dict@0.1.2/build/kuromoji.js"></script>
+    <!-- Using the standard official stable production build of Kuromoji -->
+    <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
     <script>
         const captionBox = document.getElementById('caption-box');
         const finalTextObj = document.getElementById('final-text');
@@ -30,10 +30,14 @@
         const engineStatus = document.getElementById('engine-status');
 
         let tokenizer = null;
+        let recognition = null;
+        let isRunning = false;
+        let micPermissionGranted = false;
+        
         const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
 
-        // Uses pre-bundled script dictionary data array to avoid external fetch locks on GitHub Pages
-        kuromoji.builder({ dicPath: "" }).build((err, _tokenizer) => {
+        // Pulling the required dictionary binaries cleanly from jsDelivr fallback storage
+        kuromoji.builder({ dicPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/" }).build((err, _tokenizer) => {
             if (err) {
                 engineStatus.innerText = "Initialization Failed";
                 engineStatus.style.color = "#ff3b30";
@@ -44,8 +48,7 @@
             tokenizer = _tokenizer;
             engineStatus.innerText = "Parser Connected";
             engineStatus.style.color = "#34c759";
-            finalTextObj.innerText = "画面をタップすると振仮名付き音声認識を開始します...";
-            initializeSpeechEngine();
+            finalTextObj.innerText = "画面をタップしてマイクを許可し、音声認識を開始してください...";
         });
 
         function toHiragana(katakana) {
@@ -63,7 +66,7 @@
                 let surface = token.surface_form;
                 let reading = token.reading;
 
-                // Particle formatting optimized for Canvas platform delivery
+                // Particle styling matching template requirements
                 if (surface === "は" || surface === "が" || surface === "を" || surface === "に" || surface === "で") {
                     processedHtml += `<span style="color: #c71f23;"><strong>${surface}</strong></span>`;
                     return;
@@ -79,19 +82,23 @@
             return processedHtml;
         }
 
-        function initializeSpeechEngine() {
+        function setupSpeechEngine() {
             if (!SpeechRecognition) {
                 engineStatus.innerText = "Speech API Unsupported";
                 engineStatus.style.color = "#ff3b30";
-                return;
+                return false;
             }
-            
-            let recognition = new SpeechRecognition();
-            let isRunning = false;
 
+            recognition = new SpeechRecognition();
             recognition.continuous = true;
             recognition.interimResults = true;
             recognition.lang = "ja-JP"; 
+
+            recognition.onstart = () => {
+                micPermissionGranted = true;
+                engineStatus.innerText = "Listening...";
+                engineStatus.style.color = "#ff9500";
+            };
 
             recognition.onresult = (event) => {
                 let interimTranscript = '';
@@ -112,33 +119,60 @@
                 captionBox.scrollTop = captionBox.scrollHeight;
             };
 
-            // Only restarts automatically if intentionally left running by user state
+            recognition.onerror = (event) => {
+                console.error("Speech Recognition Error:", event.error);
+                if (event.error === 'not-allowed') {
+                    engineStatus.innerText = "Microphone Denied";
+                    engineStatus.style.color = "#ff3b30";
+                    isRunning = false;
+                }
+            };
+
             recognition.onend = () => { 
                 if (isRunning) { 
-                    try { recognition.start(); } catch (e) { console.log(e); } 
+                    try { recognition.start(); } catch (e) { console.error(e); } 
                 } 
             };
 
-            document.body.addEventListener('click', (e) => {
-                if (e.target.tagName === 'A' || !tokenizer) return;
-                
-                if (!isRunning) {
-                    // Turn engine ON
-                    finalTextObj.innerHTML = "";
-                    interimTextObj.innerHTML = "";
-                    isRunning = true;
-                    engineStatus.innerText = "Listening...";
-                    engineStatus.style.color = "#ff9500";
-                    try { recognition.start(); } catch (e) { console.error(e); }
-                } else {
-                    // Turn engine OFF cleanly on next tap
-                    isRunning = false;
-                    engineStatus.innerText = "Parser Connected";
-                    engineStatus.style.color = "#34c759";
-                    try { recognition.stop(); } catch (e) { console.error(e); }
-                }
-            });
+            return true;
         }
+
+        // Global click handler handles user interaction requirements for permission prompts
+        document.body.addEventListener('click', async (e) => {
+            if (e.target.tagName === 'A' || !tokenizer) return;
+
+            // Initialize on first click if not setup yet
+            if (!recognition) {
+                const ready = setupSpeechEngine();
+                if (!ready) return;
+            }
+            
+            if (!isRunning) {
+                finalTextObj.innerHTML = "";
+                interimTextObj.innerHTML = "";
+                isRunning = true;
+                
+                // If it's the first run, this triggers the official native browser microphone prompt
+                if (!micPermissionGranted) {
+                    engineStatus.innerText = "Requesting Mic...";
+                }
+                
+                try { 
+                    recognition.start(); 
+                } catch (e) { 
+                    console.error(e); 
+                }
+            } else {
+                isRunning = false;
+                engineStatus.innerText = "Parser Connected";
+                engineStatus.style.color = "#34c759";
+                try { 
+                    recognition.stop(); 
+                } catch (e) { 
+                    console.error(e); 
+                }
+            }
+        });
     </script>
 </body>
 </html>
