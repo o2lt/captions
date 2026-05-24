@@ -39,7 +39,7 @@
         // Pulling the required dictionary binaries cleanly from jsDelivr fallback storage
        // Pulling the required dictionary binaries cleanly from jsDelivr fallback storage
         // This acts as an absolute mirror link that won't break on GitHub Pages subfolders.
-        kuromoji.builder({ dicPath: "https://cdn.jsdelivr.net/gh/takuyaa/kuromoji.js@master/dict/" }).build((err, _tokenizer) => {
+        kuromoji.builder({ dicPath: "dict/" }).build((err, _tokenizer) => {
             if (err) {
                 engineStatus.innerText = "Initialization Failed";
                 engineStatus.style.color = "#ff3b30";
