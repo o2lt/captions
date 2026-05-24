@@ -21,7 +21,7 @@
         <span class="interim" id="interim-text" style="color: #777777; font-style: italic;"></span>
     </div>
 
-   <!-- Load the self-contained browser analyzer that has the dictionary pre-bundled -->
+    <!-- Load the self-contained browser analyzer that has the dictionary pre-bundled -->
     <script src="https://cdn.jsdelivr.net/npm/kuromoji-fix-dict@0.1.2/build/kuromoji.js"></script>
     <script>
         const captionBox = document.getElementById('caption-box');
@@ -32,8 +32,7 @@
         let tokenizer = null;
         const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
 
-        // Since the dictionary is completely pre-bundled, we pass an empty string. 
-        // This instantly initializes without hanging or making external web requests!
+        // Uses pre-bundled script dictionary data array to avoid external fetch locks on GitHub Pages
         kuromoji.builder({ dicPath: "" }).build((err, _tokenizer) => {
             if (err) {
                 engineStatus.innerText = "Initialization Failed";
@@ -64,7 +63,7 @@
                 let surface = token.surface_form;
                 let reading = token.reading;
 
-                // Particle highlighting strategy matching Canvas requirements
+                // Particle formatting optimized for Canvas platform delivery
                 if (surface === "は" || surface === "が" || surface === "を" || surface === "に" || surface === "で") {
                     processedHtml += `<span style="color: #c71f23;"><strong>${surface}</strong></span>`;
                     return;
@@ -113,19 +112,30 @@
                 captionBox.scrollTop = captionBox.scrollHeight;
             };
 
+            // Only restarts automatically if intentionally left running by user state
             recognition.onend = () => { 
                 if (isRunning) { 
-                    try { recognition.start(); } catch (e) {} 
+                    try { recognition.start(); } catch (e) { console.log(e); } 
                 } 
             };
 
             document.body.addEventListener('click', (e) => {
                 if (e.target.tagName === 'A' || !tokenizer) return;
+                
                 if (!isRunning) {
+                    // Turn engine ON
                     finalTextObj.innerHTML = "";
                     interimTextObj.innerHTML = "";
                     isRunning = true;
-                    try { recognition.start(); } catch (e) {}
+                    engineStatus.innerText = "Listening...";
+                    engineStatus.style.color = "#ff9500";
+                    try { recognition.start(); } catch (e) { console.error(e); }
+                } else {
+                    // Turn engine OFF cleanly on next tap
+                    isRunning = false;
+                    engineStatus.innerText = "Parser Connected";
+                    engineStatus.style.color = "#34c759";
+                    try { recognition.stop(); } catch (e) { console.error(e); }
                 }
             });
         }
