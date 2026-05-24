@@ -37,7 +37,9 @@
         const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
 
         // Pulling the required dictionary binaries cleanly from jsDelivr fallback storage
-        kuromoji.builder({ dicPath: "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/" }).build((err, _tokenizer) => {
+       // Pulling the required dictionary binaries cleanly from jsDelivr fallback storage
+        // This acts as an absolute mirror link that won't break on GitHub Pages subfolders.
+        kuromoji.builder({ dicPath: "https://cdn.jsdelivr.net/gh/takuyaa/kuromoji.js@master/dict/" }).build((err, _tokenizer) => {
             if (err) {
                 engineStatus.innerText = "Initialization Failed";
                 engineStatus.style.color = "#ff3b30";
