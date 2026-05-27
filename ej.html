@@ -1,1 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Multi-Accent Deck</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #000000; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; overflow: hidden; height: 100vh; box-sizing: border-box;">
 
+    <!-- Fullscreen click capture layer that guarantees every touch goes through -->
+    <div id="app-container" style="display: flex; flex-direction: column; justify-content: space-between; height: 100vh; padding: 30px; box-sizing: border-box; width: 100%;">
+
+        <!-- Control Header -->
+        <div id="control-panel" style="align-self: flex-start; z-index: 10; background: rgba(20, 20, 20, 0.9); padding: 12px 18px; border-radius: 8px; border: 1px solid #333333; display: flex; align-items: center; gap: 20px;">
+            <a href="index.html" style="color: #007aff; text-decoration: none; font-size: 16px; font-weight: bold; background: #1c1c1e; padding: 6px 12px; border-radius: 4px; border: 1px solid #444;">← Return to Portal</a>
+            <div>
+                <label for="accent-select" style="font-size: 13px; color: #aaaaaa; margin-right: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Accent Filter:</label>
+                <select id="accent-select" style="background-color: #222222; color: #ffffff; border: 1px solid #555555; padding: 8px 14px; font-size: 16px; border-radius: 4px; outline: none; cursor: pointer;">
+                    <option value="en-US">English - US</option>
+                    <option value="en-GB">English - British</option>
+                    <option value="en-AU">English - Australian</option>
+                    <option value="en-IN">English - India</option>
+                </select>
+            </div>
+            <div id="engine-status" style="font-size: 13px; color: #34c759; font-weight: bold;">System Standby</div>
+        </div>
+
+        <!-- Scrollable Captioning Space -->
+        <div id="caption-box" style="font-size: 8vh; font-weight: 700; line-height: 1.5; flex-grow: 1; max-height: 75vh; overflow-y: auto; word-wrap: break-word; margin-top: 20px; scroll-behavior: smooth;">
+            <span class="final" id="final-text" style="color: #ffffff;">Tap anywhere on the dark screen to initialize English tracking...</span>
+            <span class="interim" id="interim-text" style="color: #777777; font-style: italic;"></span>
+        </div>
+
+    </div>
+
+   <script>
+    const appContainer = document.getElementById('app-container');
+    const captionBox = document.getElementById('caption-box');
+    const finalTextObj = document.getElementById('final-text');
+    const interimTextObj = document.getElementById('interim-text');
+    const accentSelect = document.getElementById('accent-select');
+    const engineStatus = document.getElementById('engine-status');
+
+    const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+
+    async function translateToJapanese(text) {
+        try {
+            const response = await fetch("https://libretranslate.de/translate", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    q: text,
+                    source: "en",
+                    target: "ja",
+                    format: "text"
+                })
+            });
+
+            const data = await response.json();
+            return data.translatedText;
+
+        } catch (error) {
+            console.error("Translation Error:", error);
+            return "[Translation Failed]";
+        }
+    }
+
+    if (!SpeechRecognition) {
+
+        finalTextObj.innerText = "Error: Browser speech API unavailable.";
+        engineStatus.innerText = "Unsupported Browser";
+        engineStatus.style.color = "#ff3b30";
+
+    } else {
+
+        let recognition = new SpeechRecognition();
+        let isRunning = false;
+
+        function configureRecognition() {
+
+            recognition.maxAlternatives = 1;
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = accentSelect.value;
+
+            recognition.onstart = () => {
+                engineStatus.innerText = "Listening...";
+                engineStatus.style.color = "#ff9500";
+            };
+
+            recognition.onresult = async (event) => {
+
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                if (finalTranscript) {
+
+                    engineStatus.innerText = "Translating...";
+
+                    const japanese = await translateToJapanese(finalTranscript);
+
+                    finalTextObj.innerHTML += `
+                        <div style="margin-bottom: 40px;">
+                            <div style="
+                                color:#ffffff;
+                                font-size:4vh;
+                                line-height:1.4;
+                                margin-bottom:10px;
+                            ">
+                                ${finalTranscript}
+                            </div>
+
+                            <div style="
+                                color:#34c759;
+                                font-size:5vh;
+                                line-height:1.5;
+                                font-weight:700;
+                            ">
+                                ${japanese}
+                            </div>
+                        </div>
+                    `;
+
+                    captionBox.scrollTop = captionBox.scrollHeight;
+
+                    engineStatus.innerText = "Listening...";
+                }
+            };
+
+            recognition.onerror = (event) => {
+
+                console.error("Speech Engine Error:", event.error);
+
+                if (event.error === 'not-allowed') {
+
+                    engineStatus.innerText = "Mic Denied";
+                    engineStatus.style.color = "#ff3b30";
+                    isRunning = false;
+                }
+            };
+
+            recognition.onend = () => {
+
+                if (isRunning) {
+
+                    setTimeout(() => {
+
+                        try {
+                            recognition.start();
+                        } catch (e) {
+                            console.error(e);
+                        }
+
+                    }, 300);
+                }
+            };
+        }
+
+        configureRecognition();
+
+        accentSelect.addEventListener('change', () => {
+
+            if (isRunning) {
+
+                recognition.stop();
+
+                setTimeout(() => {
+                    configureRecognition();
+                    recognition.start();
+                }, 400);
+
+            } else {
+
+                configureRecognition();
+            }
+        });
+
+        appContainer.addEventListener('click', (e) => {
+
+            if (
+                e.target.id === 'accent-select' ||
+                e.target.tagName === 'A' ||
+                e.target.tagName === 'LABEL'
+            ) return;
+
+            if (!isRunning) {
+
+                finalTextObj.innerHTML = "";
+                interimTextObj.innerHTML = "";
+
+                isRunning = true;
+
+                engineStatus.innerText = "Starting...";
+                engineStatus.style.color = "#34c759";
+
+                try {
+                    recognition.start();
+                } catch (e) {
+                    console.error(e);
+                }
+
+            } else {
+
+                isRunning = false;
+
+                engineStatus.innerText = "System Standby";
+                engineStatus.style.color = "#34c759";
+
+                try {
+                    recognition.stop();
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>
