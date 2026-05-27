@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Multi-Accent Deck with TW Translation</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #000000; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; overflow: hidden; height: 100vh; box-sizing: border-box;">
+
+    <div id="app-container" style="display: flex; flex-direction: column; justify-content: space-between; height: 100vh; padding: 30px; box-sizing: border-box; width: 100%;">
+
+        <div id="control-panel" style="align-self: flex-start; z-index: 10; background: rgba(20, 20, 20, 0.9); padding: 12px 18px; border-radius: 8px; border: 1px solid #333333; display: flex; align-items: center; gap: 20px;">
+            <a href="index.html" style="color: #007aff; text-decoration: none; font-size: 16px; font-weight: bold; background: #1c1c1e; padding: 6px 12px; border-radius: 4px; border: 1px solid #444;">← Return to Portal</a>
+            <div>
+                <label for="accent-select" style="font-size: 13px; color: #aaaaaa; margin-right: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Accent Filter:</label>
+                <select id="accent-select" style="background-color: #222222; color: #ffffff; border: 1px solid #555555; padding: 8px 14px; font-size: 16px; border-radius: 4px; outline: none; cursor: pointer;">
+                    <option value="en-US">English - US</option>
+                    <option value="en-GB">English - British</option>
+                    <option value="en-AU">English - Australian</option>
+                    <option value="en-IN">English - India</option>
+                </select>
+            </div>
+            <div id="engine-status" style="font-size: 13px; color: #34c759; font-weight: bold;">System Standby</div>
+        </div>
+
+        <div id="caption-box" style="flex-grow: 1; max-height: 75vh; overflow-y: auto; display: flex; flex-direction: column; gap: 25px; margin-top: 20px; scroll-behavior: smooth;">
+            
+            <div style="word-wrap: break-word;">
+                <span id="final-text" style="font-size: 7vh; font-weight: 700; color: #ffffff;">Tap anywhere on the dark screen to initialize tracking...</span>
+                <span id="interim-text" style="font-size: 7vh; font-weight: 700; color: #777777; font-style: italic;"></span>
+            </div>
+
+            <div id="translation-text" style="font-size: 5.5vh; font-weight: 600; color: #30b0ff; line-height: 1.4; word-wrap: break-word; border-top: 1px solid #222222; padding-top: 15px;">
+                即時台灣繁體翻譯將顯示於此...
+            </div>
+            
+        </div>
+
+    </div>
+
+    <script>
+        const appContainer = document.getElementById('app-container');
+        const captionBox = document.getElementById('caption-box');
+        const finalTextObj = document.getElementById('final-text');
+        const interimTextObj = document.getElementById('interim-text');
+        const translationTextObj = document.getElementById('translation-text');
+        const accentSelect = document.getElementById('accent-select');
+        const engineStatus = document.getElementById('engine-status');
+
+        const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            finalTextObj.innerText = "Error: Browser speech API unavailable.";
+            engineStatus.innerText = "Unsupported Browser";
+            engineStatus.style.color = "#ff3b30";
+        } else {
+            let recognition = new SpeechRecognition();
+            let isRunning = false;
+            let finalSessionTranscript = ""; // Maintains text tracking stability across continuous frames
+
+            // Safe, serverless API translator parsing module
+            async function executeTranslation(text) {
+                if (!text.trim()) return;
+                
+                // Target 'en' to 'zh-TW' (Traditional Chinese used in Taiwan)
+                const targetUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-TW&dt=t&q=${encodeURIComponent(text)}`;
+                
+                try {
+                    const response = await fetch(targetUrl);
+                    if (!response.ok) throw new Error("Translation request dropped.");
+                    const resultJson = await response.json();
+                    
+                    // Stitch together translations for long compound sentence streams
+                    let integratedTranslation = "";
+                    if (resultJson && resultJson[0]) {
+                        resultJson[0].forEach(sentenceBlock => {
+                            if (sentenceBlock[0]) integratedTranslation += sentenceBlock[0];
+                        });
+                    }
+                    
+                    if (integratedTranslation) {
+                        translationTextObj.innerText = integratedTranslation;
+                        captionBox.scrollTop = captionBox.scrollHeight;
+                    }
+                } catch (err) {
+                    console.error("Translation Engine Interruption: ", err);
+                }
+            }
+
+            function configureRecognition() {
+                recognition.maxAlternatives = 3;
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.lang = accentSelect.value; 
+
+                recognition.onstart = () => {
+                    engineStatus.innerText = "Listening...";
+                    engineStatus.style.color = "#ff9500";
+                };
+
+                recognition.onresult = (event) => {
+                    let interimTranscript = '';
+                    let freshFinalChunks = '';
+
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            freshFinalChunks += event.results[i][0].transcript + ' ';
+                        } else {
+                            interimTranscript += event.results[i][0].transcript;
+                        }
+                    }
+
+                    if (freshFinalChunks) { 
+                        finalSessionTranscript += freshFinalChunks;
+                        finalTextObj.innerText = finalSessionTranscript;
+                        // Execute high-priority translation pipeline whenever a clean sentence block finishes
+                        executeTranslation(finalSessionTranscript);
+                    }
+                    
+                    interimTextObj.innerText = interimTranscript;
+                    captionBox.scrollTop = captionBox.scrollHeight;
+                };
+
+                recognition.onerror = (event) => {
+                    console.error("Speech Engine Error:", event.error);
+                    if (event.error === 'not-allowed') {
+                        engineStatus.innerText = "Mic Denied";
+                        engineStatus.style.color = "#ff3b30";
+                        isRunning = false;
+                    }
+                };
+
+                recognition.onend = () => {
+                    if (isRunning) {
+                        try {
+                            recognition.start();
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }
+                };
+            }
+
+            configureRecognition();
+
+            accentSelect.addEventListener('change', () => {
+                if (isRunning) {
+                    recognition.stop();
+                    setTimeout(() => { configureRecognition(); recognition.start(); }, 400);
+                } else { 
+                    configureRecognition(); 
+                }
+            });
+
+            appContainer.addEventListener('click', (e) => {
+                if (e.target.id === 'accent-select' || e.target.tagName === 'A' || e.target.tagName === 'LABEL') return;
+                
+                if (!isRunning) {
+                    finalSessionTranscript = "";
+                    finalTextObj.innerText = "";
+                    interimTextObj.innerText = "";
+                    translationTextObj.innerText = "Waiting for translation stream...";
+                    isRunning = true;
+                    try { 
+                        recognition.start(); 
+                    } catch (e) {
+                        console.error(e);
+                    }
+                } else {
+                    isRunning = false;
+                    engineStatus.innerText = "System Standby";
+                    engineStatus.style.color = "#34c759";
+                    try { 
+                        recognition.stop(); 
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
